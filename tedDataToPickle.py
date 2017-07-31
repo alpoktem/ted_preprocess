@@ -128,7 +128,7 @@ def structureData(word_data_simple_dic, word_id_to_f0_features_dic, word_id_to_i
 			wordEntry['word.id.simple'] = key
 			wordEntry['word.id'] = word_data[0]
 			wordEntry['sent.id'] = word_data[1]
-			print("%s,"%wordEntry['sent.id'])
+			#print("%s,"%wordEntry['sent.id'])
 			word_stripped = word_data[2]
 			wordEntry['starttime'] = word_data[3]
 			wordEntry['endtime'] = word_data[4]

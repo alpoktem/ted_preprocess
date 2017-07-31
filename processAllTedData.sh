@@ -11,7 +11,7 @@ fileNo=0
 total_no_of_samples=0
 for file_wordalign in `ls $txt_sent_dir | grep "word.txt.norm.align"`; do
 	talk_id=`echo $file_wordalign | cut -d. -f1`
-	#echo $talk_id
+	echo $talk_id
 	file_word="$txt_sent_dir/$talk_id.word.txt"
 	file_wordalign="$txt_sent_dir/$talk_id.word.txt.norm.align"
 	file_wordaggs_f0="$f0_dir/$talk_id.aggs.alignword.txt"
