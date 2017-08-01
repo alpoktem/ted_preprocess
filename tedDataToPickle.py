@@ -11,7 +11,6 @@ import cPickle
 from random import randint
 from collections import OrderedDict
 import numpy as np
-import tools
 
 csv.field_size_limit(1000000000000) 
 
