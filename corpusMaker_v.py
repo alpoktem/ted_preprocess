@@ -277,7 +277,6 @@ def main(options):
 	add_word_ids_to_samples(all_samples, word_vocabulary)
 	
 	[training_set, dev_set, test_set_files] = split_data_to_sets(all_samples, options.train_split_ratio, extraction_data)
-	print(test_set_files)
 	testing_set = extract_uncut_test(test_set_files)
 	add_word_ids_to_samples(testing_set, word_vocabulary)  #test set is like one sample
 
@@ -288,7 +287,7 @@ def main(options):
 	dump_data_to_pickle(dev_set, DEV_FILE_PICKLE)
 	print("Development samples dumped to %s (Size: %i)"%(DEV_FILE_PICKLE, len(dev_set)))
 	dump_data_to_pickle(testing_set, TEST_FILE_PICKLE)
-	print("Testing samples dumped to %s (Size: %i)"%(TEST_FILE_PICKLE, len(testing_set)))
+	print("Unsampled testing data dumped to %s (Size: %i)"%(TEST_FILE_PICKLE, len(testing_set)))
 
 	#prepare corpus metadata
 	with open(talkfiles[0], 'rb') as f:
@@ -306,6 +305,7 @@ def main(options):
 				'training_set_size': len(training_set),
 				'dev_set_size': len(dev_set),
 				'test_set_size': len(testing_set),
+				'test_set_start_talk': test_set_files[0]
 				'sequence_length': options.sequence_length,
 				'no_of_semitone_levels': talkdata_metadata['no_of_semitone_levels'],
 				'no_of_pause_levels': talkdata_metadata['no_of_pause_levels']
