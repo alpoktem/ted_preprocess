@@ -305,7 +305,7 @@ def main(options):
 				'training_set_size': len(training_set),
 				'dev_set_size': len(dev_set),
 				'test_set_size': len(testing_set),
-				'test_set_start_talk': test_set_files[0]
+				'test_set_files': test_set_files,
 				'sequence_length': options.sequence_length,
 				'no_of_semitone_levels': talkdata_metadata['no_of_semitone_levels'],
 				'no_of_pause_levels': talkdata_metadata['no_of_pause_levels']
