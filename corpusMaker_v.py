@@ -21,6 +21,9 @@ END = "<END>"
 UNK = "<UNK>"
 EMP = "<EMP>"
 
+SPACE="_"
+PUNCTUATION_VOCABULARY = {0:SPACE, 1:',', 2:'.', 3:'?', 4:'!', 5:'-', 6:';', 7:':'}
+
 MAX_WORD_VOCABULARY_SIZE = 100000
 
 def checkArgument(argname, isFile=False, isDir=False, createDir=False):
@@ -239,6 +242,19 @@ def convert_value_to_level(pause_dur, pause_bins):
 			break
 	return level
 
+def dump_test_data_to_text(testing_set, groundtruth_dir):
+	data_index=1
+
+	for data_sequence in testing_set:
+		output_file = os.path.join(groundtruth_dir, "data%s.txt"%data_index)
+		with codecs.open(output_file, 'w', 'utf-8') as f_out:
+			for index, word in enumerate(data_sequence['word']):
+
+				f_out.write(PUNCTUATION_VOCABULARY[data_sequence['punc.red.id'][index]] + " ")
+				f_out.write(word + " ")
+
+		data_index += 1
+
 def main(options):
 	if not checkArgument(options.input_dir, isDir=True):
 		sys.exit("Input directory missing")
@@ -256,6 +272,9 @@ def main(options):
 		WORD_VOCAB_FILE = os.path.join(options.output_dir, "vocabulary.pickle")
 		METADATA_FILE_PICKLE = os.path.join(options.output_dir, "metadata.pickle")
 		METADATA_FILE_CSV = os.path.join(options.output_dir, "metadata.csv")
+		TEST_GROUNDTRUTH_DIR = os.path.join(options.output_dir, "groundtruth")
+		if not os.path.exists(TEST_GROUNDTRUTH_DIR): os.makedirs(TEST_GROUNDTRUTH_DIR)
+
 	if checkArgument(options.set_size):
 		max_set_size = options.set_size
 	else:
@@ -288,6 +307,9 @@ def main(options):
 	print("Development samples dumped to %s (Size: %i)"%(DEV_FILE_PICKLE, len(dev_set)))
 	dump_data_to_pickle(testing_set, TEST_FILE_PICKLE)
 	print("Unsampled testing data dumped to %s (Size: %i)"%(TEST_FILE_PICKLE, len(testing_set)))
+
+	dump_test_data_to_text(testing_set, TEST_GROUNDTRUTH_DIR)
+	print("Unsampled testing data groundtruth dumped to %s"%(TEST_GROUNDTRUTH_DIR))
 
 	#prepare corpus metadata
 	with open(talkfiles[0], 'rb') as f:
