@@ -1,5 +1,4 @@
 # Creates a sequence of features given feature files of ted corpus
-
 from __future__ import print_function
 from optparse import OptionParser
 import os
@@ -284,17 +283,15 @@ def word_data_to_pickle(talk_data, output_pickle_file):
 def word_data_to_csv(talk_data, output_csv_file):
 	with open(output_csv_file, 'wb') as f:
 		w = csv.writer(f, delimiter="\t")
-		rowIds = ['word', 'punctuation', 'word.duration', 'speech.rate.norm', 'pause', 'mean.f0', 'range.f0', 'mean.i0', 'range.i0']
+		rowIds = ['word', 'punctuation', 'pause_before', 'f0_mean', 'f0_range', 'i0_mean', 'i0_range']
 		w.writerow(rowIds)
-		rows = zip( talk_data[rowIds[0]],
-					talk_data[rowIds[1]],
-					talk_data[rowIds[2]],
-					talk_data[rowIds[3]],
-					talk_data[rowIds[4]],
-					talk_data[rowIds[5]],
-					talk_data[rowIds[6]],
-					talk_data[rowIds[7]],
-					talk_data[rowIds[8]])
+		rows = zip( talk_data['word'],
+					talk_data['punctuation'],
+					talk_data['pause'],
+					talk_data['mean.f0'],
+					talk_data['range.f0'],
+					talk_data['mean.i0'],
+					talk_data['range.i0'])
 		for row in rows:                                        
 			w.writerow(row) 
 
@@ -423,7 +420,6 @@ def wordDataToDictionary(structured_word_data, avg_speech_rate):
 	}
 	return talk_data
 
-
 def main(options):
 	#checkFile(options.file_audio, "file_audio")
 	checkFile(options.file_word, "file_word")
@@ -438,7 +434,6 @@ def main(options):
 	word_data_to_pickle(talk_data, options.file_output)
 	if(options.file_output_csv):
 		word_data_to_csv(talk_data, options.file_output_csv)
-
 
 if __name__ == "__main__":
 	usage = "usage: %prog [-s infile] [option]"

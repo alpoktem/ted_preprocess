@@ -9,6 +9,7 @@ import codecs
 import glob
 import numpy as np
 import tedDataToPickle
+import csv
 
 reload(sys)  
 sys.setdefaultencoding('utf8')
@@ -20,6 +21,9 @@ sys.setdefaultencoding('utf8')
 END = "<END>"
 UNK = "<UNK>"
 EMP = "<EMP>"
+
+SPACE="_"
+PUNCTUATION_VOCABULARY = {0:SPACE, 1:',', 2:'.', 3:'?', 4:'!', 5:'-', 6:';', 7:':'}
 
 MAX_WORD_VOCABULARY_SIZE = 100000
 
@@ -47,6 +51,29 @@ def iterable_to_dict(arr):
 def dump_data_to_pickle(data, output_pickle_file):
 	with open(output_pickle_file, 'wb') as f:
 		cPickle.dump(data, f, cPickle.HIGHEST_PROTOCOL)
+
+def dump_data_to_csv(data, output_csv_file):
+	with open(output_csv_file, 'wb') as f:
+		w = csv.writer(f, delimiter="\t")
+		rowIds = ['word', 'punctuation', 'pause_before', 'f0_mean', 'f0_range', 'i0_mean', 'i0_range']
+		w.writerow(rowIds)
+		rows = zip( data['word'],
+					data['punctuation'],
+					data['pause'],
+					data['mean.f0'],
+					data['range.f0'],
+					data['mean.i0'],
+					data['range.i0'])
+		for row in rows:                                        
+			w.writerow(row) 
+
+def dump_samples_to_csv(samples, output_csv_directory):
+	if not os.path.isdir(output_csv_directory):
+		print("Creating directory %s"%(output_csv_directory))
+		os.makedirs(output_csv_directory)
+	for sample_no, sample in enumerate(samples):
+		sample_csv_file = os.path.join(output_csv_directory, "%i.csv"%sample_no)
+		dump_data_to_csv(sample, sample_csv_file)
 
 def read_vocabulary(file_name):
 	with codecs.open(file_name, 'r', 'utf-8') as f:
@@ -90,6 +117,7 @@ def initialize_sample(sample_sequence_length):
 			  'punc.id': [0] * sample_sequence_length,
 			  'punc.red.id': [0] * sample_sequence_length,
 			  'pause.id': [0] * sample_sequence_length,
+			  'pause': [0] * sample_sequence_length,
 			  'mean.f0.id': [0] * sample_sequence_length,
 			  'mean.i0.id': [0] * sample_sequence_length,
 			  'range.f0.id': [0] * sample_sequence_length,
@@ -99,6 +127,27 @@ def initialize_sample(sample_sequence_length):
 			  'range.f0':[0.0] * sample_sequence_length,
 			  'range.i0':[0.0] * sample_sequence_length}
 	return sample
+
+def initialize_test_data():
+	test_data = {
+			  'word': [],
+			  'word.duration': [],
+			  'speech.rate.norm': [],
+			  'punctuation': [],
+			  'punctuation.reduced': [],
+			  'punc.id': [],
+			  'punc.red.id': [],
+			  'pause.id': [],
+			  'pause': [],
+			  'mean.f0.id': [],
+			  'mean.i0.id': [],
+			  'range.f0.id': [],
+			  'range.i0.id': [],
+			  'mean.f0':[],
+			  'mean.i0':[],
+			  'range.f0':[],
+			  'range.i0':[] }
+	return test_data
 
 def sample_data_from_files(talkfiles, sample_sequence_length, desired_no_of_samples):
 	samples = []
@@ -166,7 +215,7 @@ def sample_data_from_files(talkfiles, sample_sequence_length, desired_no_of_samp
 		extract_data.append(extract_info)
 	return [samples, extract_data]
 
-def split_data_to_sets(all_samples, train_split_ratio):
+def split_data_to_sets(all_samples, train_split_ratio, extract_data):
 	no_of_samples = len(all_samples)
 	
 	training_size = int(no_of_samples * train_split_ratio)
@@ -175,15 +224,37 @@ def split_data_to_sets(all_samples, train_split_ratio):
 
 	all_set = all_samples[0:no_of_samples]
 	training_set = all_samples[0:training_size]
-	testing_start = training_size + 1
-	testing_end = training_size + testing_size + 1
-	testing_set = all_samples[testing_start:testing_end]
-	dev_set = all_samples[testing_end: no_of_samples]
+	dev_start = training_size + 1
+	dev_end = training_size + dev_size + 1
+	dev_set = all_samples[dev_start:dev_end]
+	#test_set = all_samples[dev_end: no_of_samples]
+	take_next = False
+	test_set_files = []
 
-	return [all_set, training_set, testing_set, dev_set]
+	for extract_info in extract_data:
+		if extract_info[1] > dev_end:
+			take_next = True
+		if take_next:
+			test_set_files.append(extract_info[0])
+
+	return [training_set, dev_set, test_set_files]
+
+def extract_uncut_test(test_set_files):
+	test_data = initialize_test_data()
+	for talkfile in test_set_files:
+		with open(talkfile, 'rb') as f:
+			talkdata = cPickle.load(f)
+			for key in test_data.keys():
+				if key == 'word.id':
+					continue
+				test_data[key].extend(talkdata[key])
+	return [test_data]
+
 
 def add_word_ids_to_samples(samples, word_vocabulary):
 	for sample in samples:
+		sequence_length = len(sample['word'])
+		sample['word.id'] = [0]*sequence_length
 		for index, word in enumerate(sample['word']):
 			sample['word.id'][index] = word_vocabulary.get(word, word_vocabulary[UNK])
 
@@ -196,6 +267,18 @@ def convert_value_to_level(pause_dur, pause_bins):
 			break
 	return level
 
+def dump_test_data_to_text(testing_set, output_file):
+	data_index=1
+
+	for data_sequence in testing_set:
+		with codecs.open(output_file, 'w', 'utf-8') as f_out:
+			for index, word in enumerate(data_sequence['word']):
+
+				f_out.write(PUNCTUATION_VOCABULARY[data_sequence['punc.red.id'][index]] + " ")
+				f_out.write(word + " ")
+
+		data_index += 1
+
 def main(options):
 	if not checkArgument(options.input_dir, isDir=True):
 		sys.exit("Input directory missing")
@@ -205,14 +288,17 @@ def main(options):
 		ALL_FILE_PICKLE = os.path.join(options.output_dir, "all.pickle")
 		ALL_FILE_CSV = os.path.join(options.output_dir, "all.csv")
 		TRAIN_FILE_PICKLE = os.path.join(options.output_dir, "train.pickle")
-		TRAIN_FILE_CSV = os.path.join(options.output_dir, "train.csv")
+		TRAIN_FILE_CSV_DIR = os.path.join(options.output_dir, "train_samples")
 		TEST_FILE_PICKLE = os.path.join(options.output_dir, "test.pickle")
 		TEST_FILE_CSV = os.path.join(options.output_dir, "test.csv")
 		DEV_FILE_PICKLE = os.path.join(options.output_dir, "dev.pickle")
-		DEV_FILE_CSV = os.path.join(options.output_dir, "dev.csv")
+		DEV_FILE_CSV_DIR = os.path.join(options.output_dir, "dev_samples")
 		WORD_VOCAB_FILE = os.path.join(options.output_dir, "vocabulary.pickle")
 		METADATA_FILE_PICKLE = os.path.join(options.output_dir, "metadata.pickle")
 		METADATA_FILE_CSV = os.path.join(options.output_dir, "metadata.csv")
+		TEST_GROUNDTRUTH_TXT = os.path.join(options.output_dir, "test.txt")
+
+
 	if checkArgument(options.set_size):
 		max_set_size = options.set_size
 	else:
@@ -222,7 +308,7 @@ def main(options):
 	talkfiles.sort()
 
 	#merge all data in files while segmenting to samples of size sequence_length. Each sample should start with a new sentence. Stop when set_size is reached 
-	[all_samples, _] = sample_data_from_files(talkfiles, options.sequence_length, max_set_size)
+	[all_samples, extraction_data] = sample_data_from_files(talkfiles, options.sequence_length, max_set_size)
 
 	word_counts = get_word_counts_from_samples(all_samples)
 	vocabulary = build_vocabulary(word_counts, options.min_vocab)
@@ -233,16 +319,24 @@ def main(options):
 
 	add_word_ids_to_samples(all_samples, word_vocabulary)
 	
-	[all_set, training_set, testing_set, dev_set] = split_data_to_sets(all_samples, options.train_split_ratio)
+	[training_set, dev_set, test_set_files] = split_data_to_sets(all_samples, options.train_split_ratio, extraction_data)
+	testing_set = extract_uncut_test(test_set_files)
+	add_word_ids_to_samples(testing_set, word_vocabulary)  #test set is like one sample
 
-	dump_data_to_pickle(all_set, ALL_FILE_PICKLE)
-	print("All samples dumped to %s (Size: %i)"%(ALL_FILE_PICKLE, len(all_set)))
+	#dump_data_to_pickle(all_set, ALL_FILE_PICKLE)
+	#print("All samples dumped to %s (Size: %i)"%(ALL_FILE_PICKLE, len(all_set)))
 	dump_data_to_pickle(training_set, TRAIN_FILE_PICKLE)
+	dump_samples_to_csv(training_set, TRAIN_FILE_CSV_DIR)
 	print("Training samples dumped to %s (Size: %i)"%(TRAIN_FILE_PICKLE, len(training_set)))
 	dump_data_to_pickle(dev_set, DEV_FILE_PICKLE)
+	dump_samples_to_csv(dev_set, DEV_FILE_CSV_DIR)
 	print("Development samples dumped to %s (Size: %i)"%(DEV_FILE_PICKLE, len(dev_set)))
 	dump_data_to_pickle(testing_set, TEST_FILE_PICKLE)
-	print("Testing samples dumped to %s (Size: %i)"%(TEST_FILE_PICKLE, len(testing_set)))
+	dump_data_to_csv(testing_set[0], TEST_FILE_CSV)
+	print("Unsampled testing data dumped to %s (Size: %i)"%(TEST_FILE_PICKLE, len(testing_set)))
+
+	dump_test_data_to_text(testing_set, TEST_GROUNDTRUTH_TXT)
+	print("Unsampled testing data groundtruth dumped to %s"%(TEST_GROUNDTRUTH_TXT))
 
 	#prepare corpus metadata
 	with open(talkfiles[0], 'rb') as f:
@@ -252,14 +346,15 @@ def main(options):
 				'punc_vocab_size': len(tedDataToPickle.PUNCTUATION_VOCABULARY),
 				'punc_red_vocab_size': len(tedDataToPickle.REDUCED_PUNCTUATION_VOCABULARY),
 				'min_occurence_for_vocab': options.min_vocab,
-				'all_file_path': ALL_FILE_PICKLE,
+				#'all_file_path': ALL_FILE_PICKLE,
 				'train_file_path': TRAIN_FILE_PICKLE,
 				'test_file_path': TEST_FILE_PICKLE,
 				'dev_file_path': DEV_FILE_PICKLE,
-				'all_set_size': len(all_set),
+				#'all_set_size': len(all_set),
 				'training_set_size': len(training_set),
 				'dev_set_size': len(dev_set),
 				'test_set_size': len(testing_set),
+				'test_set_files': test_set_files,
 				'sequence_length': options.sequence_length,
 				'no_of_semitone_levels': talkdata_metadata['no_of_semitone_levels'],
 				'no_of_pause_levels': talkdata_metadata['no_of_pause_levels']

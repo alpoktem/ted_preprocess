@@ -17,7 +17,7 @@ Batch process talks:
 ./processAllTedData.sh sample_ted sample_ted_eachtalk
 
 To collect all data from talks into one corpus partitioned into training/development/testing sets. 
-python corpusMaker_v.py -i sample_ted_eachtalk -o sample_ted_punc_data -r 0.7 -v 1
+python corpusMaker.py -i sample_ted_eachtalk -o sample_ted_punc_data -r 0.7 -v 1
 (Training and development set are sampled into sequences of size 50. Training set constitutes 0.7 of all data. Word vocabulary is created with minimum word occurence 1. Testing set is unpartitioned)
 
 
