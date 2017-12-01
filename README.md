@@ -1,4 +1,4 @@
-# ted_data_preprocess
+# ted_preprocess
 
 Preprocess the prosodically annotated TED corpus. Annotations of talks are prepared using: https://github.com/laic/prosody
 
@@ -18,7 +18,7 @@ Output file:
 ## Sample run:
 
 `python tedDataToPickle.py -w sample_ted/txt-sent/0001.word.txt -l sample_ted/txt-sent/0001.word.txt.norm.align  -f sample_ted/derived/segs/f0/0001.aggs.alignword.txt -i sample_ted/derived/segs/i0/0001.aggs.alignword.txt -o 0001.csv`
-
+s
 ## Batch process talks:
 
 `./processAllTedData.sh sample_ted sample_ted_eachtalk`
