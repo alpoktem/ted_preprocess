@@ -15,12 +15,6 @@ csv.field_size_limit(1000000000000)
 
 features_f0_header = 'mean.normF0\tsd.normF0\tmax.normF0\tmin.normF0\tmedian.normF0\tq1.normF0\tq2.5.normF0\tq5.normF0\tq25.normF0\tq75.normF0\tq95.normF0\tq97.5.normF0\tq99.normF0\tslope.normF0\tintercept.normF0\tmean.normF0.slope\tsd.normF0.slope\tmax.normF0.slope\tmin.normF0.slope\tmedian.normF0.slope\tq1.normF0.slope\tq2.5.normF0.slope\tq5.normF0.slope\tq25.normF0.slope\tq75.normF0.slope\tq95.normF0.slope\tq97.5.normF0.slope\tq99.normF0.slope\tslope.normF0.slope\tintercept.normF0.slope'
 features_i0_header = 'mean.normI0\tsd.normI0\tmax.normI0\tmin.normI0\tmedian.normI0\tq1.normI0\tq2.5.normI0\tq5.normI0\tq25.normI0\tq75.normI0\tq95.normI0\tq97.5.normI0\tq99.normI0\tslope.normI0\tintercept.normI0\tmean.normI0.slope\tsd.normI0.slope\tmax.normI0.slope\tmin.normI0.slope\tmedian.normI0.slope\tq1.normI0.slope\tq2.5.normI0.slope\tq5.normI0.slope\tq25.normI0.slope\tq75.normI0.slope\tq95.normI0.slope\tq97.5.normI0.slope\tq99.normI0.slope\tslope.normI0.slope\tintercept.normI0.slope'
-	
-def puncProper(punc):
-	if punc in INV_PUNCTUATION_CODES.keys():
-		return punc
-	else:
-		return puncEstimate(punc)
 
 #PUNC_DICT = [",", '.', '?', '!',':', ';', '-', '']
 SPACE = "_"
@@ -29,9 +23,15 @@ INV_PUNCTUATION_CODES = {SPACE:0, ',':1, '.':2, '?':3, '!':4, '-':5, ';':6, ':':
 REDUCED_PUNCTUATION_VOCABULARY = {0:SPACE, 1:',', 2:'.', 3:'?'}
 REDUCED_INV_PUNCTUATION_CODES = {SPACE:0, ',':1, '.':2, '?':3, '':0}
 EOS_PUNCTUATION_CODES = [2,3,4,5,6,7]
+EOS_PUNCTUATION = ['.', '?', '!', '-', ':']
 
 FLOAT_FORMATTING="{0:.4f}"
 
+def puncProper(punc):
+	if punc in INV_PUNCTUATION_CODES.keys():
+		return punc
+	else:
+		return puncEstimate(punc)
 
 def reducePuncCode(puncCode):
 	if puncCode in [4, 5, 6, 7]: #period
@@ -282,8 +282,8 @@ def word_data_to_pickle(talk_data, output_pickle_file):
 
 def word_data_to_csv(talk_data, output_csv_file):
 	with open(output_csv_file, 'wb') as f:
-		w = csv.writer(f, delimiter="\t")
-		rowIds = ['word', 'punctuation', 'pause_before', 'f0_mean', 'f0_range', 'i0_mean', 'i0_range']
+		w = csv.writer(f, delimiter="|")
+		rowIds = ['word', 'punctuation_before', 'pause_before', 'f0_mean', 'f0_range', 'i0_mean', 'i0_range']
 		w.writerow(rowIds)
 		rows = zip( talk_data['word'],
 					talk_data['punctuation'],
@@ -294,32 +294,6 @@ def word_data_to_csv(talk_data, output_csv_file):
 					talk_data['range.i0'])
 		for row in rows:                                        
 			w.writerow(row) 
-
-def convert_value_to_level(pause_dur, pause_bins):
-	level = 0
-	for bin_no, bin_upper_limit in enumerate(pause_bins):
-		if pause_dur > bin_upper_limit:
-			level += 1
-		else:
-			break
-	return level
-
-def create_pause_bins():
-	bins = np.arange(0, 1, 0.05)
-	bins = np.concatenate((bins, np.arange(1, 2, 0.1)))
-	bins = np.concatenate((bins, np.arange(2, 5, 0.2)))
-	bins = np.concatenate((bins, np.arange(5, 10, 0.5)))
-	bins = np.concatenate((bins, np.arange(10, 20, 1)))
-	return bins
-
-def create_semitone_bins():
-	bins = np.arange(-20, -10, 1)
-	bins = np.concatenate((bins, np.arange(-10, -5, 0.5)))
-	bins = np.concatenate((bins, np.arange(-5, 0, 0.25)))
-	bins = np.concatenate((bins, np.arange(0, 5, 0.25)))
-	bins = np.concatenate((bins, np.arange(5, 10, 0.5)))
-	bins = np.concatenate((bins, np.arange(10, 20, 1)))
-	return bins
 
 def wordDataToDictionary(structured_word_data, avg_speech_rate):
 	actualword_seq = []
@@ -348,8 +322,6 @@ def wordDataToDictionary(structured_word_data, avg_speech_rate):
 	punctuation_id_seq = []
 	reduced_punctuation_id_seq = []
 
-	pause_bins = create_pause_bins()
-	semitone_bins = create_semitone_bins()
 
 	for word_datum in structured_word_data:
 		actualword_seq += [word_datum['word.stripped']]
@@ -366,12 +338,7 @@ def wordDataToDictionary(structured_word_data, avg_speech_rate):
 		jumpi0_seq += [word_datum['mean.i0_jump_from_prev']]
 		rangef0_seq += [word_datum['range.f0']]
 		rangei0_seq += [word_datum['range.i0']]
-		#id sequences
-		meanf0_id_seq += [convert_value_to_level(word_datum['features_f0'][0], semitone_bins)]
-		meani0_id_seq += [convert_value_to_level(word_datum['features_i0'][0], semitone_bins)]
-		rangef0_id_seq += [convert_value_to_level(word_datum['range.f0'], semitone_bins)]
-		rangei0_id_seq += [convert_value_to_level(word_datum['range.i0'], semitone_bins)]
-		pause_id_seq += [convert_value_to_level(word_datum['pause_before_dur'], pause_bins)]
+
 		#punctuation
 		punctuation_id = INV_PUNCTUATION_CODES[word_datum['minimal_punc_before']]
 		punctuation_id_seq += [punctuation_id]
@@ -386,9 +353,7 @@ def wordDataToDictionary(structured_word_data, avg_speech_rate):
 			speech_rate_normalized_seq += [1.0]
 
 
-	metadata = {'no_of_semitone_levels': len(semitone_bins),
-				'no_of_pause_levels': len(pause_bins),
-				'no_of_words': len(actualword_seq),
+	metadata = {'no_of_words': len(actualword_seq),
 				'avg_speech_rate': avg_speech_rate
 	}
 
@@ -400,7 +365,6 @@ def wordDataToDictionary(structured_word_data, avg_speech_rate):
 				   'punctuation': punc_seq,
 				   'punctuation.reduced': punc_reduced_seq,
 				   'pause': pause_before_seq,
-				   'pause.id': pause_id_seq,
 				   'mean.f0': meanf0_seq,
 				   'mean.i0': meani0_seq,
 				   'med.f0': medf0_seq,
@@ -410,10 +374,6 @@ def wordDataToDictionary(structured_word_data, avg_speech_rate):
 				   'jump.i0': jumpi0_seq,
 				   'range.f0': rangef0_seq,
 				   'range.i0': rangei0_seq,
-				   'mean.f0.id': meanf0_id_seq,
-				   'mean.i0.id': meani0_id_seq,
-				   'range.f0.id': rangef0_id_seq,
-				   'range.i0.id': rangei0_id_seq,
 				   'punc.id': punctuation_id_seq,
 				   'punc.red.id': reduced_punctuation_id_seq,
 				   'metadata': metadata
@@ -431,9 +391,7 @@ def main(options):
 	[structured_word_data, avg_speech_rate] = structureData(word_data_simple_dic, word_id_to_f0_features_dic, word_id_to_i0_features_dic, word_data_aligned_dic)
 	talk_data = wordDataToDictionary(structured_word_data, avg_speech_rate)
 
-	word_data_to_pickle(talk_data, options.file_output)
-	if(options.file_output_csv):
-		word_data_to_csv(talk_data, options.file_output_csv)
+	word_data_to_csv(talk_data, options.file_output_csv)
 
 if __name__ == "__main__":
 	usage = "usage: %prog [-s infile] [option]"
@@ -443,8 +401,7 @@ if __name__ == "__main__":
 	parser.add_option("-l", "--align", dest="file_wordalign", default=None, help="word.txt.norm.align", type="string")	#in /txt-sent
 	parser.add_option("-f", "--aggs_f0", dest="file_wordaggs_f0", default=None, help="aggs.alignword.txt under /derived/segs/f0/", type="string")	#in /derived/segs/f0/
 	parser.add_option("-i", "--aggs_i0", dest="file_wordaggs_i0", default=None, help="aggs.alignword.txt under /derived/segs/i0/", type="string")	#in /derived/segs/i0/
-	parser.add_option("-c", "--out_csv", dest="file_output_csv", default=None, help="outputfile (csv)", type="string")
-	parser.add_option("-o", "--out", dest="file_output", default=None, help="outputfile", type="string")
+	parser.add_option("-o", "--out_csv", dest="file_output_csv", default=None, help="outputfile (csv)", type="string")
 
 	(options, args) = parser.parse_args()
 	main(options)
