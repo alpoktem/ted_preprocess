@@ -4,16 +4,16 @@ Preprocess the prosodically annotated TED corpus. Annotations of talks are prepa
 
 ## Processing a single talk with tedDataToPickle.py:
 
-* Input files: 
+Input files: 
 
-1- `.word.txt` (cmd input as `-w`)
+1. `.word.txt` (cmd input as `-w`)
 
-2- `.word.txt.norm.align` (cmd input as `-l`)
+2. `.word.txt.norm.align` (cmd input as `-l`)
 
-3,4- `.aggs.alignword.txt` for fundemental frequency and intensity (cmd input as `-f` and `-i`)
+3. `.aggs.alignword.txt` for fundemental frequency and intensity (cmd input as `-f` and `-i`)
 
-* Output file:
-1- CSV file with word aligned features (cmd input as `-o`)
+Output file:
+1. CSV file with word aligned features (cmd input as `-o`)
 
 ## Sample run:
 
@@ -23,7 +23,7 @@ Preprocess the prosodically annotated TED corpus. Annotations of talks are prepa
 
 `./processAllTedData.sh sample_ted sample_ted_eachtalk`
 
-## [*punkProse*](https://github.com/alpoktem/punkProse) processable corpus 
+## Obtaining [*punkProse*](https://github.com/alpoktem/punkProse) processable corpus 
 To collect samples from talks into one corpus partitioned into training/development/testing sets:
 
 `python corpusMaker.py -i sample_ted_eachtalk -o sample_ted_punc_data -r 0.7 -v 1 -l 50`
