@@ -17,6 +17,6 @@ for file_wordalign in `ls $txt_sent_dir | grep "word.txt.norm.align"`; do
 	file_wordaggs_f0="$f0_dir/$talk_id.aggs.alignword.txt"
 	file_wordaggs_i0="$i0_dir/$talk_id.aggs.alignword.txt"
 
-	python tedDataToPickle.py -w $file_word -l $file_wordalign  -f $file_wordaggs_f0 -i $file_wordaggs_i0 -o $output_dir/$talk_id.csv
+	python tedDataToCsv.py -w $file_word -l $file_wordalign  -f $file_wordaggs_f0 -i $file_wordaggs_i0 -o $output_dir/$talk_id.csv
 	
 done
